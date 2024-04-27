@@ -37,13 +37,17 @@ pub struct Args {
     #[arg(long)]
     pub platform: Option<Platform>,
 
-    /// Whether to output in json format
+    /// Whether to output in json format. Deprecated: use --format.
     #[arg(long)]
     pub json: bool,
 
-    /// Whether to output in pretty json format
+    /// Whether to output in pretty json format. Deprecated: use --format.
     #[arg(long)]
     pub json_pretty: bool,
+
+    /// Output format. Defaults to table.
+    #[arg(long)]
+    pub format: Option<OutputFormat>,
 
     /// Sorting strategy
     #[arg(long, default_value = "name", value_enum)]
@@ -63,6 +67,33 @@ pub struct Args {
     /// Don't install the environment for pypi solving, only update the lock-file if it can solve without installing.
     #[arg(long)]
     pub no_install: bool,
+}
+
+/// Output formats
+#[derive(clap::ValueEnum, Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub enum OutputFormat {
+    Json,
+    JsonPretty,
+    Table,
+}
+impl OutputFormat {
+    fn print(
+        &self,
+        environment: crate::project::Environment<'_>,
+        packages_to_output: &Vec<PackageToOutput>,
+    ) {
+        match self {
+            OutputFormat::Json => json_packages(&packages_to_output, false),
+            OutputFormat::JsonPretty => json_packages(&packages_to_output, true),
+            OutputFormat::Table => {
+                if !environment.is_default() {
+                    eprintln!("Environment: {}", environment.name().fancy_display());
+                }
+
+                print_packages_as_table(&packages_to_output).expect("an io error occurred");
+            }
+        }
+    }
 }
 
 fn serde_skip_is_editable(editable: &bool) -> bool {
@@ -200,18 +231,24 @@ pub async fn execute(args: Args) -> miette::Result<()> {
         return Ok(());
     }
 
-    // Print as table string or JSON
-    if args.json || args.json_pretty {
-        // print packages as json
-        json_packages(&packages_to_output, args.json_pretty);
-    } else {
-        if !environment.is_default() {
-            eprintln!("Environment: {}", environment.name().fancy_display());
+    let mut format = args.format.unwrap_or(OutputFormat::Table);
+    if args.json {
+        if args.format.is_some() {
+            eprintln!("--json and --format provided, using --format");
+        } else {
+            eprintln!("Deprecated flag --json provided, please use --format as --format=json- will be removed in an upcoming release");
+            format = OutputFormat::Json;
         }
-
-        // print packages as table
-        print_packages_as_table(&packages_to_output).expect("an io error occurred");
+    } else if args.json_pretty {
+        if args.format.is_some() {
+            eprintln!("--json-pretty and --format provided, using --format");
+        } else {
+            eprintln!("Deprecated flag --json-pretty provided, please use --format=json-pretty as --json-pretty will be removed in an upcoming release");
+            format = OutputFormat::JsonPretty;
+        }
     }
+
+    format.print(environment, &packages_to_output);
 
     Project::warn_on_discovered_from_env(args.manifest_path.as_deref());
     Ok(())
