@@ -13,15 +13,22 @@
     setting the environment variable 'PIXI_HOME'.
 .PARAMETER NoPathUpdate
     If specified, the script will not update the PATH environment variable.
+.PARAMETER PixiRepourl
+    Specifies Pixi's repo url.
+    The default value is 'https://github.com/prefix-dev/pixi'. You can also specify it by
+    setting the environment variable 'PIXI_REPOURL'.
 .LINK
     https://pixi.sh
 .LINK
     https://github.com/prefix-dev/pixi
+.NOTES
+    Version: v0.58.0
 #>
 param (
     [string] $PixiVersion = 'latest',
     [string] $PixiHome = "$Env:USERPROFILE\.pixi",
-    [switch] $NoPathUpdate
+    [switch] $NoPathUpdate,
+    [string] $PixiRepourl = 'https://github.com/prefix-dev/pixi'
 )
 
 Set-StrictMode -Version Latest
@@ -96,6 +103,41 @@ function Get-Env {
     $EnvRegisterKey.GetValue($name, $null, $RegistryValueOption)
 }
 
+function Get-TargetTriple() {
+  try {
+    # NOTE: this might return X64 on ARM64 Windows, which is OK since emulation is available.
+    # It works correctly starting in PowerShell Core 7.3 and Windows PowerShell in Win 11 22H2.
+    # Ideally this would just be
+    #   [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
+    # but that gets a type from the wrong assembly on Windows PowerShell (i.e. not Core)
+    $a = [System.Reflection.Assembly]::LoadWithPartialName("System.Runtime.InteropServices.RuntimeInformation")
+    $t = $a.GetType("System.Runtime.InteropServices.RuntimeInformation")
+    $p = $t.GetProperty("OSArchitecture")
+    # Possible OSArchitecture Values: https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.architecture
+    # Rust supported platforms: https://doc.rust-lang.org/stable/rustc/platform-support.html
+    switch ($p.GetValue($null).ToString())
+    {
+      "X86" { return "i686-pc-windows-msvc" }
+      "X64" { return "x86_64-pc-windows-msvc" }
+      "Arm" { return "thumbv7a-pc-windows-msvc" }
+      "Arm64" { return "aarch64-pc-windows-msvc" }
+    }
+  } catch {
+    # The above was added in .NET 4.7.1, so Windows PowerShell in versions of Windows
+    # prior to Windows 10 v1709 may not have this API.
+    Write-Verbose "Get-TargetTriple: Exception when trying to determine OS architecture."
+    Write-Verbose $_
+  }
+
+  # This is available in .NET 4.0. We already checked for PS 5, which requires .NET 4.5.
+  Write-Verbose("Get-TargetTriple: falling back to Is64BitOperatingSystem.")
+  if ([System.Environment]::Is64BitOperatingSystem) {
+    return "x86_64-pc-windows-msvc"
+  } else {
+    return "i686-pc-windows-msvc"
+  }
+}
+
 if ($Env:PIXI_VERSION) {
     $PixiVersion = $Env:PIXI_VERSION
 }
@@ -108,17 +150,25 @@ if ($Env:PIXI_NO_PATH_UPDATE) {
     $NoPathUpdate = $true
 }
 
-# Repository name
-$REPO = 'prefix-dev/pixi'
-$ARCH = 'x86_64'
-$PLATFORM = 'pc-windows-msvc'
+if ($Env:PIXI_REPOURL) {
+    $PixiRepourl = $Env:PIXI_REPOURL -replace '/$', ''
+}
 
-$BINARY = "pixi-$ARCH-$PLATFORM"
+# Repository name
+$ARCH = Get-TargetTriple
+
+if (-not @("x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc") -contains $ARCH) {
+    throw "ERROR: could not find binaries for this platform ($ARCH)."
+}
+
+$BINARY = "pixi-$ARCH"
 
 if ($PixiVersion -eq 'latest') {
-    $DOWNLOAD_URL = "https://github.com/$REPO/releases/latest/download/$BINARY.zip"
+    $DOWNLOAD_URL = "$PixiRepourl/releases/latest/download/$BINARY.zip"
 } else {
-    $DOWNLOAD_URL = "https://github.com/$REPO/releases/download/$PixiVersion/$BINARY.zip"
+    # Check if version is incorrectly specified without prefix 'v', and prepend 'v' in this case
+    $PixiVersion = "v" + ($PixiVersion -replace '^v', '')
+    $DOWNLOAD_URL = "$PixiRepourl/releases/download/$PixiVersion/$BINARY.zip"
 }
 
 $BinDir = Join-Path $PixiHome 'bin'

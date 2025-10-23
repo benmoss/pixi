@@ -1,3 +1,5 @@
+# pyright: reportOptionalMemberAccess=false
+
 import os
 
 import cv2
@@ -32,7 +34,6 @@ def capture_and_grayscale():
         else:
             working_cam = cap
             break
-
 
     # Check if the webcam is opened correctly
     if not working_cam.isOpened():

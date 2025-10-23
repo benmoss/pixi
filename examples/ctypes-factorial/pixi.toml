@@ -1,14 +1,12 @@
-[project]
-name = "ctypes-examples"
-version = "0.2.0"
-description = "Add a short description here"
+[workspace]
 authors = ["liquidcarbon <akscrps@gmail.com>"]
 channels = ["conda-forge"]
+name = "ctypes-examples"
 platforms = ["linux-64", "win-64", "osx-64", "osx-arm64"]
 
 [dependencies]
-python = "3.12.0.*"
 loguru = "0.7.2.*"
+python = "3.12.0.*"
 
 [target.win-64.dependencies]
 m2w64-gcc = "5.3.0.*"
@@ -35,7 +33,7 @@ start = { cmd = [
   "12345678",
   "-e",
   "python",
-], depends_on = "compile" }
+], depends-on = "compile" }
 
 [target.osx-64.tasks]
 compile = { cmd = "clang -shared -o src/factorial.so src/factorial.c" }

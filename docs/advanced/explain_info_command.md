@@ -1,10 +1,4 @@
----
-part: pixi/advanced
-title: Info command
-description: Learn what the info command reports
----
-
-`pixi info` prints out useful information to debug a situation or to get an overview of your machine/project.
+`pixi info` prints out useful information to debug a situation or to get an overview of your machine/workspace.
 This information can also be retrieved in `json` format using the `--json` flag, which can be useful for programmatically reading it.
 
 ```title="Running pixi info in the pixi repo"
@@ -19,7 +13,7 @@ This information can also be retrieved in `json` format using the `--json` flag,
          Cache dir: /home/user/.cache/rattler/cache
       Auth storage: /home/user/.rattler/credentials.json
 
-Project
+Workspace
 ------------
            Version: 0.13.0
      Manifest file: /home/user/development/pixi/pixi.toml
@@ -38,41 +32,30 @@ default
 
 ## Global info
 
-The first part of the info output is information that is always available and tells you what pixi can read on your machine.
+The first part of the info output is information that is always available and tells you what Pixi can read on your machine.
 
 ### Platform
 
 This defines the platform you're currently on according to pixi.
-If this is incorrect, please file an issue on the [pixi repo](https://github.com/prefix-dev/pixi).
+If this is incorrect, please file an issue on the [Pixi repo](https://github.com/prefix-dev/pixi).
 
 ### Virtual packages
 
-The virtual packages that pixi can find on your machine.
+The virtual packages that Pixi can find on your machine.
 
 In the Conda ecosystem, you can depend on virtual packages.
 These packages aren't real dependencies that are going to be installed, but rather are being used in the solve step to find if a package can be installed on the machine.
 A simple example: When a package depends on Cuda drivers being present on the host machine it can do that by depending on the `__cuda` virtual package.
-In that case, if pixi cannot find the `__cuda` virtual package on your machine the installation will fail.
+In that case, if Pixi cannot find the `__cuda` virtual package on your machine the installation will fail.
 
 ### Cache dir
 
-Pixi caches all previously downloaded packages in a cache folder.
-This cache folder is shared between all pixi projects and globally installed tools.
-Normally the locations would be:
-
-1. XDG compliant cache folder when it's available (`$XDG_CACHE_HOME/pixi`
-   or `$HOME/.cache/pixi`)
-2. Platform-specific default cache folder:
-   - Linux: `$XDG_CACHE_HOME/rattler` or `$HOME`/.cache/rattler
-   - macOS: `$HOME`/Library/Caches/rattler
-   - Windows: `%APPDATA%\rattler`
-
-When your system is filling up you can easily remove this folder.
-It will re-download everything it needs the next time you install a project.
+The directory where Pixi stores its cache.
+Checkout the [cache documentation](../workspace/environment.md#caching-packages) for more information.
 
 ### Auth storage
 
-Check the [authentication documentation](authentication.md)
+Check the [authentication documentation](../deployment/authentication.md)
 
 ### Cache size
 
@@ -80,18 +63,18 @@ Check the [authentication documentation](authentication.md)
 
 The size of the previously mentioned "Cache dir" in Mebibytes.
 
-## Project info
+## Workspace info
 
-Everything below `Project` is info about the project you're currently in.
-This info is only available if your path has a [manifest file](../reference/configuration.md).
+Everything below `Workspace` is info about the workspace you're currently in.
+This info is only available if your path has a [manifest file](../reference/pixi_manifest.md).
 
 ### Manifest file
 
-The path to the [manifest file](../reference/configuration.md) that describes the project.
+The path to the [manifest file](../reference/pixi_manifest.md) that describes the workspace.
 
 ### Last updated
 
-The last time the lock file was updated, either manually or by pixi itself.
+The last time the lock file was updated, either manually or by Pixi itself.
 
 ## Environment info
 
@@ -116,4 +99,4 @@ The list of dependencies defined for this environment.
 
 ### Target platforms
 
-The platforms the project has defined.
+The platforms the workspace has defined.

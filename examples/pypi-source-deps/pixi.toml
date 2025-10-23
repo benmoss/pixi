@@ -1,26 +1,30 @@
-[project]
-name = "pypi-source-deps"
-version = "0.1.0"
-description = "Add a short description here"
+[workspace]
 authors = ["Tim de Jager <tim@prefix.dev>"]
 channels = ["conda-forge"]
+description = "Add a short description here"
+name = "pypi-source-deps"
 platforms = ["osx-arm64", "linux-64", "win-64", "osx-64"]
+version = "0.1.0"
 
 [tasks]
 hello = "python -c 'import minimal_project.module; minimal_project.module.hello()'"
+start = { depends-on = ["hello"] }
 test = "pytest ."
 
 [dependencies]
 python = "*"
 
 [pypi-dependencies]
-
 rich = "~=13.7"
-# Lets start with some git dependencies
-# With ssh
-flask = { git = "ssh://git@github.com/pallets/flask" }
+
+# Let's start with some git dependencies
+# With ssh: (you need to have the correct ssh keys setup for which I (ruben) am to lazy to set up correctly)
+# flask = { git = "ssh://git@github.com/pallets/flask" }
+
 # With https
-requests = { git = "https://github.com/psf/requests.git", rev = "0106aced5faa299e6ede89d1230bd6784f2c3660" }
+flask = { git = "https://github.com/pallets/flask" }
+httpx = { git = "https://github.com/encode/httpx.git", rev = "c7c13f18a5af4c64c649881b2fe8dbd72a519c32" }
+
 # TODO: will support later -> or use branch = '' or tag = '' to specify a branch or tag
 
 # You can also directly add a source dependency from file
